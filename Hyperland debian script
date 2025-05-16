@@ -1,0 +1,90 @@
+#!/bin/bash
+
+set -e
+
+echo -e "\n⚙️ Root Hyperland + Gruvbox rice script for Debian (Kali Kernel) — Koko Hekmatyar edition ⚙️\n"
+
+# Update and upgrade system
+apt update && apt upgrade -y
+
+# Add contrib and non-free repos if missing (won't harm if already added)
+add-apt-repository -y contrib || true
+add-apt-repository -y non-free || true
+apt update
+
+# Install build dependencies and libs
+apt install -y \
+  build-essential meson ninja-build pkg-config git cargo \
+  libwayland-dev libxkbcommon-dev libinput-dev libdrm-dev libgbm-dev libegl-dev libgles2-mesa-dev \
+  libpcre2-dev wayland-protocols libwayland-egl-backend-dev libpixman-1-dev libpipewire-0.3-dev pipewire \
+  libpulse-dev libxcb-composite0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xinput-dev \
+  libxcb-shape0-dev libxcb-randr0-dev libxcb-xkb-dev libxcb-xrm-dev libxcb-render-util0-dev libxcb-image0-dev
+
+# Clone and build Hyperland
+echo -e "\n🛠️ Cloning and building Hyperland from source... 🛠️\n"
+rm -rf ~/hyperland-src
+git clone https://github.com/hyperland/hyperland.git ~/hyperland-src
+cd ~/hyperland-src
+meson build
+ninja -C build
+ninja -C build install
+cd ~
+rm -rf ~/hyperland-src
+
+# Setup Hyperland config
+echo -e "\n⚙️ Setting up Hyperland config... ⚙️\n"
+mkdir -p ~/.config/hyperland
+cp /usr/share/doc/hyperland/example-config.lua ~/.config/hyperland/config.lua || true
+
+# Install Alacritty terminal emulator via cargo (latest version)
+echo -e "\n🔥 Installing Alacritty terminal via cargo... 🔥\n"
+cargo install alacritty || {
+  echo "Cargo install failed, attempting to install via apt..."
+  apt install -y alacritty || echo "Failed to install Alacritty via apt. Install manually."
+}
+
+# Setup Gruvbox colors for Alacritty
+echo -e "\n🎨 Setting up Gruvbox color scheme for Alacritty... 🎨\n"
+mkdir -p ~/.config/alacritty
+cat > ~/.config/alacritty/alacritty.yml <<EOF
+colors:
+  primary:
+    background: '0x282828'
+    foreground: '0xebdbb2'
+  normal:
+    black:   '0x282828'
+    red:     '0xcc241d'
+    green:   '0x98971a'
+    yellow:  '0xd79921'
+    blue:    '0x458588'
+    magenta: '0xb16286'
+    cyan:    '0x689d6a'
+    white:   '0xa89984'
+  bright:
+    black:   '0x928374'
+    red:     '0xfb4934'
+    green:   '0xb8bb26'
+    yellow:  '0xfabd2f'
+    blue:    '0x83a598'
+    magenta: '0xd3869b'
+    cyan:    '0x8ec07c'
+    white:   '0xebdbb2'
+EOF
+
+# Setup Koko Hekmatyar style prompt (bash)
+echo -e "\n🖤 Installing Koko Hekmatyar style minimalistic, deadly calm bash prompt... 🖤\n"
+
+cat >> ~/.bashrc <<'EOF'
+
+# Koko Hekmatyar style prompt — cold, precise, no bullshit
+PS1='\[\e[38;5;240m\][\u@\h \W]\$\[\e[0m\] '
+
+# Silent warning on shell start
+echo -e "\033[1;34mThis terminal is your weapon. Use it with precision.\033[0m"
+EOF
+
+# Final instructions
+echo -e "\n✅ Setup complete. Start Hyperland with 'hyperland' from a TTY.\n"
+echo -e "🔥 Launch Alacritty with 'alacritty' for full Gruvbox vibes.\n"
+echo -e "⚠️ Stop other desktop sessions before launching Hyperland to avoid conflicts.\n"
+echo -e "🖤 Your shell now commands like Koko — silent but deadly.\n"
