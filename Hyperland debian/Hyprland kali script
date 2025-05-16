@@ -1,52 +1,65 @@
 #!/bin/bash
-
 set -e
 
-echo -e "\n⚙️ Root Hyprland + Gruvbox rice script for Debian (Kali Kernel) — Koko Hekmatyar edition ⚙️\n"
+# X11 Hyprland-style Rice Script for Debian (Kali kernel compatible)
+echo -e "\n🔧 Installing Hyprland-style ricing tools for X11...\n"
 
-# Update and upgrade system
-apt update && apt upgrade -y
+# Ensure necessary tools
+apt update && apt install -y \
+  git build-essential meson ninja-build cmake pkg-config libx11-dev libxcomposite-dev \
+  libxdamage-dev libxfixes-dev libxcb1-dev libxcb-damage0-dev libxcb-xfixes0-dev \
+  libxcb-shape0-dev libxcb-render-util0-dev libxcb-render0-dev libxcb-randr0-dev \
+  libxcb-composite0-dev libxcb-image0-dev libxcb-present-dev libxcb-xinerama0-dev \
+  libpixman-1-dev libdbus-1-dev libconfig-dev libgl1-mesa-dev libpcre2-dev \
+  libev-dev uthash-dev libepoxy-dev libxext-dev libxrandr-dev libxinerama-dev \
+  libxkbcommon-dev x11-xserver-utils zsh curl wget unzip gnome-themes-extra \
+  polybar
 
-# Add contrib and non-free repos if missing (won't hurt if already added)
-add-apt-repository -y contrib || true
-add-apt-repository -y non-free || true
-apt update
-
-# Install build dependencies and libs
-apt install -y \
-  build-essential meson ninja-build pkg-config git cargo \
-  libwayland-dev libxkbcommon-dev libinput-dev libdrm-dev libgbm-dev libegl-dev libgles2-mesa-dev \
-  libpcre2-dev wayland-protocols libwayland-egl-backend-dev libpixman-1-dev libpipewire-0.3-dev pipewire \
-  libpulse-dev libxcb-composite0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xinput-dev \
-  libxcb-shape0-dev libxcb-randr0-dev libxcb-xkb-dev libxcb-xrm-dev libxcb-render-util0-dev libxcb-image0-dev
-
-# Clone and build Hyprland
-echo -e "\n🛠️ Cloning and building Hyprland from source... 🛠️\n"
-rm -rf ~/hyprland-src
-git clone --recursive https://github.com/hyprland/hyprland.git ~/hyprland-src
-cd ~/hyprland-src
-meson build
+# Install Picom (jonaburg fork for animations)
+echo -e "\n📦 Installing Picom with animations (jonaburg fork)...\n"
+git clone https://github.com/jonaburg/picom.git /tmp/picom
+cd /tmp/picom
+meson --buildtype=release . build
 ninja -C build
-ninja -C build install
+sudo ninja -C build install
 cd ~
-rm -rf ~/hyprland-src
+rm -rf /tmp/picom
 
-# Setup Hyprland config
-echo -e "\n⚙️ Setting up Hyprland config... ⚙️\n"
-mkdir -p ~/.config/hyprland
-cp /usr/share/doc/hyprland/example-config.lua ~/.config/hyprland/config.lua || true
+mkdir -p ~/.config/picom
+cat > ~/.config/picom/picom.conf <<EOF
+corner-radius = 16;
+rounded-corners-exclude = ["window_type = 'dock'", "class_g = 'i3-frame'"];
+animations = true;
+animation-stiffness = 180;
+animation-dampening = 20;
+fade-in-step = 0.03;
+fade-out-step = 0.03;
+backend = "glx";
+blur-method = "dual_kawase";
+blur-strength = 8;
+EOF
 
-# Install Alacritty terminal emulator via cargo (latest version)
-echo -e "\n🔥 Installing Alacritty terminal via cargo... 🔥\n"
-cargo install alacritty || {
-  echo "Cargo install failed, attempting to install via apt..."
-  apt install -y alacritty || echo "Failed to install Alacritty via apt. Install manually."
-}
-
-# Setup Gruvbox colors for Alacritty
-echo -e "\n🎨 Setting up Gruvbox color scheme for Alacritty... 🎨\n"
+# Alacritty with Gruvbox
+apt install -y alacritty
 mkdir -p ~/.config/alacritty
 cat > ~/.config/alacritty/alacritty.yml <<EOF
+window:
+  decorations: full
+  dynamic_padding: true
+  padding:
+    x: 12
+    y: 12
+  opacity: 0.9
+  startup_mode: Maximized
+  title: Terminal
+  dynamic_title: true
+
+decoration_theme_variant: "Dark"
+
+gl:
+  enable: true
+  renderer: "glsl"
+
 colors:
   primary:
     background: '0x282828'
@@ -71,20 +84,43 @@ colors:
     white:   '0xebdbb2'
 EOF
 
-# Setup Koko Hekmatyar style prompt (bash)
-echo -e "\n🖤 Installing Koko Hekmatyar style minimalistic, deadly calm bash prompt... 🖤\n"
+# Install i3-gaps
+apt install -y i3 i3lock i3status feh rofi
 
-cat >> ~/.bashrc <<'EOF'
+mkdir -p ~/.config/i3
+cat > ~/.config/i3/config <<EOF
+set $mod Mod4
+font pango:DejaVu Sans Mono 10
+exec --no-startup-id picom --experimental-backends &
+exec --no-startup-id polybar example &
+exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpapers/default.jpg
 
-# Koko Hekmatyar style prompt — cold, precise, no bullshit
-PS1='\[\e[38;5;240m\][\u@\h \W]\$\[\e[0m\] '
+bindsym $mod+Return exec alacritty
+bindsym $mod+d exec rofi -show run
+bindsym $mod+Shift+q kill
 
-# Silent warning on shell start
-echo -e "\033[1;34mThis terminal is your weapon. Use it with precision.\033[0m"
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+c reload
+
+bar {
+    status_command polybar example
+}
 EOF
 
-# Final instructions
-echo -e "\n✅ Setup complete. Start Hyprland with 'hyprland' from a TTY.\n"
-echo -e "🔥 Launch Alacritty with 'alacritty' for full Gruvbox vibes.\n"
-echo -e "⚠️ Stop other desktop sessions before launching Hyprland to avoid conflicts.\n"
-echo -e "🖤 Your shell now commands like Koko — silent but deadly.\n"
+# Theme tools
+apt install -y lxappearance qt5ct qt6ct papirus-icon-theme fonts-font-awesome gnome-tweaks arc-theme
+
+# Final message
+echo -e "\n✅ Hyprland-style X11 rice applied with i3-gaps and polybar! Reboot or log into i3 session, enjoy animation and styling.\n"
+echo -e "\n🚀 Run: picom --experimental-backends &\n🖥️  Launch: i3 window manager\n💅 Terminal: alacritty or wezterm\n🎨 Theme: Set via lxappearance or qt5ct/qt6ct\n🧠 Bar: polybar (auto-starts in i3)\n"
