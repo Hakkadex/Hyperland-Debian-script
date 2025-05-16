@@ -2,12 +2,12 @@
 
 set -e
 
-echo -e "\n⚙️ Root Hyperland + Gruvbox rice script for Debian (Kali Kernel) — Koko Hekmatyar edition ⚙️\n"
+echo -e "\n⚙️ Root Hyprland + Gruvbox rice script for Debian (Kali Kernel) — Koko Hekmatyar edition ⚙️\n"
 
 # Update and upgrade system
 apt update && apt upgrade -y
 
-# Add contrib and non-free repos if missing (won't harm if already added)
+# Add contrib and non-free repos if missing (won't hurt if already added)
 add-apt-repository -y contrib || true
 add-apt-repository -y non-free || true
 apt update
@@ -20,21 +20,21 @@ apt install -y \
   libpulse-dev libxcb-composite0-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xinput-dev \
   libxcb-shape0-dev libxcb-randr0-dev libxcb-xkb-dev libxcb-xrm-dev libxcb-render-util0-dev libxcb-image0-dev
 
-# Clone and build Hyperland
-echo -e "\n🛠️ Cloning and building Hyperland from source... 🛠️\n"
-rm -rf ~/hyperland-src
-git clone https://github.com/hyperland/hyperland.git ~/hyperland-src
-cd ~/hyperland-src
+# Clone and build Hyprland
+echo -e "\n🛠️ Cloning and building Hyprland from source... 🛠️\n"
+rm -rf ~/hyprland-src
+git clone --recursive https://github.com/hyprland/hyprland.git ~/hyprland-src
+cd ~/hyprland-src
 meson build
 ninja -C build
 ninja -C build install
 cd ~
-rm -rf ~/hyperland-src
+rm -rf ~/hyprland-src
 
-# Setup Hyperland config
-echo -e "\n⚙️ Setting up Hyperland config... ⚙️\n"
-mkdir -p ~/.config/hyperland
-cp /usr/share/doc/hyperland/example-config.lua ~/.config/hyperland/config.lua || true
+# Setup Hyprland config
+echo -e "\n⚙️ Setting up Hyprland config... ⚙️\n"
+mkdir -p ~/.config/hyprland
+cp /usr/share/doc/hyprland/example-config.lua ~/.config/hyprland/config.lua || true
 
 # Install Alacritty terminal emulator via cargo (latest version)
 echo -e "\n🔥 Installing Alacritty terminal via cargo... 🔥\n"
@@ -84,7 +84,7 @@ echo -e "\033[1;34mThis terminal is your weapon. Use it with precision.\033[0m"
 EOF
 
 # Final instructions
-echo -e "\n✅ Setup complete. Start Hyperland with 'hyperland' from a TTY.\n"
+echo -e "\n✅ Setup complete. Start Hyprland with 'hyprland' from a TTY.\n"
 echo -e "🔥 Launch Alacritty with 'alacritty' for full Gruvbox vibes.\n"
-echo -e "⚠️ Stop other desktop sessions before launching Hyperland to avoid conflicts.\n"
+echo -e "⚠️ Stop other desktop sessions before launching Hyprland to avoid conflicts.\n"
 echo -e "🖤 Your shell now commands like Koko — silent but deadly.\n"
