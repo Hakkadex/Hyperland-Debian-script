@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Are you root or nah
+if [ "$EUID" -ne 0 ]; then
+  echo "Run this script as root or with sudo, cupcake." >&2
+  exit 1
+fi
+
+set -e  # Bail on error
+
+echo "[*] Updating system and installing base packages..."
+pacman -Syu --noconfirm
+pacman -S --noconfirm \
+  git base-devel wget curl \
+  zsh neovim unzip
+
+echo "[*] Installing Hyprland and essential Wayland tools..."
+# Enable parallel downloads & multilib if not already enabled
+sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
+
+pacman -Syu --noconfirm
+pacman -S --noconfirm \
+  hyprland \
+  waybar \
+  wofi \
+  kitty \
+  thunar \
+  pavucontrol \
+  pipewire pipewire-pulse pipewire-jack wireplumber \
+  qt5-wayland qt6-wayland \
+  wl-clipboard \
+  swaybg \
+  ttf-jetbrains-mono-nerd \
+  ttf-font-awesome \
+  grim slurp \
+  xdg-desktop-portal-hyprland \
+  network-manager-applet
+
+echo "[*] Creating user-level directories..."
+sudo -u $SUDO_USER mkdir -p /home/$SUDO_USER/.config/{hypr,waybar,wofi,kitty,wallpapers}
+
+echo "[*] Pulling dotfiles and basic config..."
+# Sample Hyprland config
+cat <<EOF > /home/$SUDO_USER/.config/hypr/hyprland.conf
+exec-once = waybar &
+exec-once = wofi --show drun &
+exec-once = swaybg -i /home/$SUDO_USER/.config/wallpapers/wall.jpg --mode fill
+
+$mod = SUPER
+bind = \$mod, RETURN, exec, kitty
+bind = \$mod, Q, killactive
+bind = \$mod, E, exec, thunar
+bind = \$mod, D, exec, wofi --show drun
+bind = \$mod SHIFT, E, exit
+bind = \$mod, F, togglefloating
+bind = \$mod, V, fullscreen
+EOF
+
+# Waybar config
+cat <<EOF > /home/$SUDO_USER/.config/waybar/config.jsonc
+{
+  "layer": "top",
+  "modules-left": ["clock"],
+  "modules-right": ["pulseaudio", "network", "battery"]
+}
+EOF
+
+# Kitty config
+cat <<EOF > /home/$SUDO_USER/.config/kitty/kitty.conf
+font_family JetBrainsMono Nerd Font
+font_size 12
+background_opacity 0.9
+EOF
+
+# Sample wallpaper
+wget -qO /home/$SUDO_USER/.config/wallpapers/wall.jpg https://picsum.photos/1920/1080
+
+echo "[*] Setting zsh as default shell..."
+chsh -s /bin/zsh $SUDO_USER
+
+echo "[*] Enabling services..."
+systemctl enable --now NetworkManager
+systemctl enable --now pipewire-pulse
+
+echo "[*] All done. Reboot and pick Hyprland from your display manager, or use TTY to start manually."
+
+# Optional: auto-start Hyprland from .zprofile if using no DM
+cat <<EOF >> /home/$SUDO_USER/.zprofile
+if [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]]; then
+  exec Hyprland
+fi
+EOF
+
+chown -R $SUDO_USER:$SUDO_USER /home/$SUDO_USER/.config
+
+echo "✅ Hyprland is ready. Now go make it yours, killer."
