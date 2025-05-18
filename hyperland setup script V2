@@ -1,53 +1,62 @@
 #!/bin/bash
 
-# Are you root or nah
+set -e
+
 if [ "$EUID" -ne 0 ]; then
-  echo "Run this script as root or with sudo, cupcake." >&2
+  echo "Run this as root or with sudo, numbnuts."
   exit 1
 fi
 
-set -e  # Bail on error
+USER_NAME=$(logname)
 
-echo "[*] Updating system and installing base packages..."
-pacman -Syu --noconfirm
-pacman -S --noconfirm \
-  git base-devel wget curl \
-  zsh neovim unzip
+echo "[*] Installing dependencies..."
 
-echo "[*] Installing Hyprland and essential Wayland tools..."
-# Enable parallel downloads & multilib if not already enabled
-sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
-sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf
+apt update && apt upgrade -y
 
-pacman -Syu --noconfirm
-pacman -S --noconfirm \
-  hyprland \
-  waybar \
-  wofi \
-  kitty \
-  thunar \
-  pavucontrol \
-  pipewire pipewire-pulse pipewire-jack wireplumber \
-  qt5-wayland qt6-wayland \
-  wl-clipboard \
-  swaybg \
-  ttf-jetbrains-mono-nerd \
-  ttf-font-awesome \
-  grim slurp \
-  xdg-desktop-portal-hyprland \
-  network-manager-applet
+apt install -y \
+  git wget curl unzip build-essential \
+  cmake meson ninja-build pkg-config libwayland-dev \
+  libxkbcommon-dev libinput-dev libpixman-1-dev \
+  libegl1-mesa-dev libgles2-mesa-dev \
+  libvulkan-dev vulkan-validationlayers-dev \
+  libxcb1-dev libxcb-util0-dev libxcb-ewmh-dev \
+  libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev \
+  libxcb-randr0-dev libxcb-render-util0-dev libxcb-shape0-dev \
+  libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-xkb-dev \
+  wayland-protocols libwayland-bin libdisplay-info-dev \
+  pipewire wireplumber libpipewire-0.3-dev \
+  libdbus-1-dev libglib2.0-dev libcairo2-dev libpango1.0-dev \
+  libjson-c-dev libpugixml-dev libavutil-dev libavcodec-dev \
+  zsh kitty wl-clipboard grim slurp swaybg \
+  wofi pavucontrol thunar fonts-jetbrains-mono
 
-echo "[*] Creating user-level directories..."
-sudo -u $SUDO_USER mkdir -p /home/$SUDO_USER/.config/{hypr,waybar,wofi,kitty,wallpapers}
+echo "[*] Cloning and building Hyprland..."
+sudo -u $USER_NAME bash <<EOF
+cd ~
 
-echo "[*] Pulling dotfiles and basic config..."
-# Sample Hyprland config
-cat <<EOF > /home/$SUDO_USER/.config/hypr/hyprland.conf
+# Clone and build Hyprland
+git clone --recursive https://github.com/hyprwm/Hyprland
+cd Hyprland
+meson build
+ninja -C build
+
+mkdir -p ~/.local/bin
+cp build/Hyprland ~/.local/bin/
+
+# Add to PATH
+echo 'export PATH=\$HOME/.local/bin:\$PATH' >> ~/.zshrc
+EOF
+
+echo "[*] Creating basic config files..."
+sudo -u $USER_NAME mkdir -p /home/$USER_NAME/.config/{hypr,waybar,wofi,kitty,wallpapers}
+
+# Hyprland config
+cat <<EOF > /home/$USER_NAME/.config/hypr/hyprland.conf
 exec-once = waybar &
 exec-once = wofi --show drun &
-exec-once = swaybg -i /home/$SUDO_USER/.config/wallpapers/wall.jpg --mode fill
+exec-once = swaybg -i /home/$USER_NAME/.config/wallpapers/wall.jpg --mode fill
 
-$mod = SUPER
+\$mod = SUPER
 bind = \$mod, RETURN, exec, kitty
 bind = \$mod, Q, killactive
 bind = \$mod, E, exec, thunar
@@ -57,41 +66,25 @@ bind = \$mod, F, togglefloating
 bind = \$mod, V, fullscreen
 EOF
 
-# Waybar config
-cat <<EOF > /home/$SUDO_USER/.config/waybar/config.jsonc
-{
-  "layer": "top",
-  "modules-left": ["clock"],
-  "modules-right": ["pulseaudio", "network", "battery"]
-}
-EOF
-
 # Kitty config
-cat <<EOF > /home/$SUDO_USER/.config/kitty/kitty.conf
+cat <<EOF > /home/$USER_NAME/.config/kitty/kitty.conf
 font_family JetBrainsMono Nerd Font
 font_size 12
 background_opacity 0.9
 EOF
 
-# Sample wallpaper
-wget -qO /home/$SUDO_USER/.config/wallpapers/wall.jpg https://picsum.photos/1920/1080
+# Wallpaper
+wget -qO /home/$USER_NAME/.config/wallpapers/wall.jpg https://picsum.photos/1920/1080
 
-echo "[*] Setting zsh as default shell..."
-chsh -s /bin/zsh $SUDO_USER
-
-echo "[*] Enabling services..."
-systemctl enable --now NetworkManager
-systemctl enable --now pipewire-pulse
-
-echo "[*] All done. Reboot and pick Hyprland from your display manager, or use TTY to start manually."
-
-# Optional: auto-start Hyprland from .zprofile if using no DM
-cat <<EOF >> /home/$SUDO_USER/.zprofile
+# Zprofile autostart
+cat <<EOF >> /home/$USER_NAME/.zprofile
 if [[ -z \$DISPLAY && \$XDG_VTNR -eq 1 ]]; then
   exec Hyprland
 fi
 EOF
 
-chown -R $SUDO_USER:$SUDO_USER /home/$SUDO_USER/.config
+chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.config
 
-echo "✅ Hyprland is ready. Now go make it yours, killer."
+echo "[*] Done. Now reboot and run Hyprland from TTY. No display manager needed."
+
+echo "✅ Hyprland is up. Time to rice it like it owes you money."
