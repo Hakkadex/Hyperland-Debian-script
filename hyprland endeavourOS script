@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Run as a regular user with sudo privileges
+
+set -e
+
+echo "🔧 Updating system..."
+sudo pacman -Syu --noconfirm
+
+echo "📦 Installing dependencies..."
+sudo pacman -S --noconfirm \
+    git neovim zsh \
+    wl-clipboard \
+    waybar \
+    wofi \
+    mako \
+    hyprpaper \
+    wlogout \
+    thunar \
+    kitty \
+    ttf-jetbrains-mono-nerd \
+    sddm \
+    pipewire wireplumber pipewire-audio pipewire-pulse pipewire-alsa \
+    gvfs gvfs-mtp gvfs-smb \
+    polkit-gnome qt5-wayland qt6-wayland \
+    xdg-desktop-portal-hyprland xdg-desktop-portal
+
+echo "💾 Cloning custom Hyperland config..."
+CONFIG_DIR="$HOME/.config"
+mkdir -p "$CONFIG_DIR"
+cd "$CONFIG_DIR"
+
+git clone https://github.com/hyprwm/Hyprland "$CONFIG_DIR/hyprland"
+git clone https://github.com/catppuccin/waybar "$CONFIG_DIR/waybar"
+git clone https://github.com/adi1090x/rofi.git "$CONFIG_DIR/rofi"
+# You can swap these URLs for your own dotfiles repo later
+
+echo "🛠 Setting up hypr config..."
+mkdir -p "$CONFIG_DIR/hypr"
+cat <<EOF > "$CONFIG_DIR/hypr/hyprland.conf"
+# Minimal Hyperland config to get you started
+exec-once = waybar &
+exec-once = hyprpaper &
+exec-once = mako &
+exec-once = nm-applet &
+exec-once = wlogout &
+monitor=,preferred,auto,1
+
+# Keybindings
+bind=SUPER,RETURN,exec,kitty
+bind=SUPER,Q,killactive,
+bind=SUPER,E,exec,thunar
+bind=SUPER,D,exec,wofi --show drun
+bind=SUPER,F,fullscreen
+bind=SUPER_SHIFT,E,exit,
+
+# Basic aesthetics
+general {
+    gaps_in = 5
+    gaps_out = 10
+    border_size = 2
+    col.active_border = rgba(89b4faee)
+    col.inactive_border = rgba(313244aa)
+}
+EOF
+
+echo "🎨 Setting wallpaper and hyprpaper config..."
+mkdir -p "$HOME/Pictures/wallpapers"
+curl -L -o "$HOME/Pictures/wallpapers/hyperland.jpg" https://wallpaper.dog/large/10729023.jpg
+
+mkdir -p "$CONFIG_DIR/hyprpaper"
+cat <<EOF > "$CONFIG_DIR/hyprpaper/hyprpaper.conf"
+preload = $HOME/Pictures/wallpapers/hyperland.jpg
+wallpaper = ,$HOME/Pictures/wallpapers/hyperland.jpg
+EOF
+
+echo "🎛 Setting up SDDM (optional)..."
+sudo systemctl enable sddm.service
+
+echo "🔄 Setting ZSH as default shell..."
+chsh -s $(which zsh)
+
+echo "✅ Setup complete. Reboot or log out and log back into Hyperland."
