@@ -1,0 +1,17 @@
+# Kali Rolling (main repo)
+deb http://http.kali.org/kali kali-rolling main non-free contrib
+
+# Kali Last Snapshot (for stable fallback)
+deb http://http.kali.org/kali kali-last-snapshot main non-free contrib
+
+# Kali Experimental (advanced packages and some breaking stuff)
+deb http://http.kali.org/kali kali-experimental main non-free contrib
+
+# Kali Bleeding Edge (pentest tools and fast updates)
+deb http://http.kali.org/kali kali-bleeding-edge main
+
+# Debian Unstable (if you really want to flirt with chaos)
+deb http://deb.debian.org/debian unstable main contrib non-free
+
+# Optional: Flatpak
+# Use flatpak instead of mixing Ubuntu, Arch or Fedora repos.
