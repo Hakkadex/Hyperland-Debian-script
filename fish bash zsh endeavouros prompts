@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -e
+
+echo "🚀 Installing Starship prompt and Nerd Fonts..."
+sudo pacman -S --noconfirm starship ttf-jetbrains-mono-nerd
+
+echo "🔧 Setting up config directories..."
+mkdir -p ~/.config
+mkdir -p ~/.config/fish
+
+echo "🎨 Writing universal Starship config..."
+cat <<EOF > ~/.config/starship.toml
+format = "[](#a3aed2)[](bg:#a3aed2 fg:#1e1e2e)[](bg:#1e1e2e fg:#a3aed2) [](bg:#1e1e2e fg:#f7768e)\$username[@](bg:#1e1e2e fg:#f7768e)\$hostname[](fg:#1e1e2e bg:none) \$directory \$git_branch \$git_status \$character"
+
+[directory]
+style = "fg:#c3e88d bg:none"
+format = "[](fg:#89ddff bg:none)[ \$path](fg:#89ddff bg:none)[](fg:#89ddff bg:none) "
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[✖](bold red)"
+vicmd_symbol = "[V](bold yellow)"
+EOF
+
+echo "🐟 Fish config setup..."
+cat <<EOF > ~/.config/fish/config.fish
+# Fish config with Starship prompt
+set -gx EDITOR nvim
+set -gx VISUAL nvim
+starship init fish | source
+EOF
+
+echo "🔫 Zsh config setup..."
+cat <<EOF > ~/.zshrc
+# Zsh with Starship
+export EDITOR=nvim
+eval "\$(starship init zsh)"
+EOF
+
+echo "🧨 Bash config setup..."
+cat <<EOF > ~/.bashrc
+# Bash with Starship
+export EDITOR=nvim
+eval "\$(starship init bash)"
+EOF
+
+echo "💾 Set default shell? (zsh, fish, bash)"
+read -rp "Shell to set as default: " default_shell
+
+case "\$default_shell" in
+  zsh)
+    chsh -s \$(which zsh)
+    ;;
+  fish)
+    chsh -s \$(which fish)
+    ;;
+  bash)
+    chsh -s \$(which bash)
+    ;;
+  *)
+    echo "Not setting default shell."
+    ;;
+esac
+
+echo "✅ Shells pimped out. Restart your terminal and bask in neon glory."
