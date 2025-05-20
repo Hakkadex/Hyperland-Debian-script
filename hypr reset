@@ -1,0 +1,4 @@
+rm -rf ~/.config/hypr ~/.config/waybar ~/.config/wofi ~/.config/hyprpaper ~/.config/mako && \
+git clone https://github.com/entropy1337/hyprdots ~/.config/hyprdots && \
+cp -r ~/.config/hyprdots/.config/* ~/.config/ && \
+echo "🛠️ Loaded full dotfiles setup into ~/.config/"
