@@ -1,0 +1,147 @@
+#!/bin/bash
+
+set -e
+
+echo "[*] Nuking old configs and rebuilding in Capuchin style..."
+
+# Required packages
+sudo pacman -S --noconfirm zsh git thunar kitty waybar wofi mako xdg-user-dirs
+
+# Set Zsh as default shell
+chsh -s /bin/zsh
+
+# Wipe shell configs
+echo "[*] Resetting shell configs..."
+rm -f ~/.bashrc ~/.zshrc ~/.profile ~/.xprofile ~/.bash_profile ~/.bash_logout
+
+# Write new Zsh config with Oh My Zsh
+echo "[*] Installing Oh My Zsh..."
+export RUNZSH=no
+export CHSH=no
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+cat > ~/.zshrc << 'EOF'
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="agnoster"
+plugins=(git z)
+source $ZSH/oh-my-zsh.sh
+export EDITOR=nano
+EOF
+
+# Write new Bash config just in case
+cat > ~/.bashrc << 'EOF'
+# Bash fallback
+export EDITOR=nano
+alias ls='ls --color=auto'
+EOF
+
+# Make sure user dirs are set
+xdg-user-dirs-update
+
+# Wipe and recreate Hyprland config
+echo "[*] Rebuilding Hyprland config..."
+rm -rf ~/.config/hypr
+mkdir -p ~/.config/hypr
+cat > ~/.config/hypr/hyprland.conf << 'EOF'
+exec-once = thunar &
+exec-once = waybar &
+exec-once = mako
+
+input {
+  kb_layout = us
+}
+
+general {
+  gaps_in = 5
+  gaps_out = 20
+  border_size = 2
+  col.active_border = rgba(ce8c3eee) rgba(e6b062ee) 45deg
+  col.inactive_border = rgba(444444aa)
+}
+
+animations {
+  enabled = yes
+  bezier = ease, 0.25, 0.1, 0.25, 1.0
+  animation = windows, 1, 7, ease
+  animation = fade, 1, 10, ease
+  animation = workspaces, 1, 6, ease
+}
+
+decoration {
+  rounding = 10
+  blur {
+    enabled = yes
+    size = 8
+    passes = 2
+    ignore_opacity = true
+  }
+  drop_shadow = yes
+  shadow_range = 20
+  shadow_render_power = 3
+  col.shadow = rgba(00000088)
+}
+
+# Keybinds
+bind = SUPER, Q, exec, kitty
+bind = SUPER, C, killactive
+bind = SUPER, V, togglefloating
+bind = SUPER, F, fullscreen
+bind = SUPER, RETURN, exec, thunar
+bind = SUPER, W, exit
+
+EOF
+
+# Waybar config
+echo "[*] Waybar setup..."
+rm -rf ~/.config/waybar
+mkdir -p ~/.config/waybar
+cat > ~/.config/waybar/config << 'EOF'
+{
+  "layer": "top",
+  "position": "top",
+  "modules-left": ["hyprland/workspaces"],
+  "modules-center": ["clock"],
+  "modules-right": ["pulseaudio", "battery", "network"],
+  "clock": {
+    "format": "  %a %d %b   %I:%M %p"
+  }
+}
+EOF
+
+# Wofi config
+mkdir -p ~/.config/wofi
+cat > ~/.config/wofi/style.css << 'EOF'
+window {
+  background-color: rgba(30, 30, 30, 0.9);
+  border: 2px solid #e6b062;
+  font-family: sans-serif;
+  color: #f5deb3;
+}
+EOF
+
+# Kitty config
+echo "[*] Kitty config..."
+rm -rf ~/.config/kitty
+mkdir -p ~/.config/kitty
+cat > ~/.config/kitty/kitty.conf << 'EOF'
+font_family      FiraCode Nerd Font
+font_size        11.0
+background       #1e1e1e
+foreground       #e6b062
+selection_foreground #000000
+selection_background #e6b062
+cursor           #e6b062
+cursor_shape     beam
+EOF
+
+# Mako config
+mkdir -p ~/.config/mako
+cat > ~/.config/mako/config << 'EOF'
+background-color=#1e1e1e
+text-color=#e6b062
+border-color=#ce8c3e
+border-size=2
+default-timeout=5000
+EOF
+
+echo "[*] All done. Reboot or relog to see the Capuchin reign begin."
